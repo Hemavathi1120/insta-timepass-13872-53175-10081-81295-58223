@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
@@ -226,6 +226,15 @@ const Profile = () => {
         });
         await updateDoc(profileUserRef, {
           followers: arrayUnion(user.uid)
+        });
+
+        // Create follow notification
+        await addDoc(collection(db, 'notifications'), {
+          type: 'follow',
+          fromUserId: user.uid,
+          toUserId: profileUserId,
+          read: false,
+          createdAt: serverTimestamp()
         });
 
         setProfile(prev => prev ? {

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Grid, Edit, Upload, UserPlus, UserMinus, Settings, LogOut, Moon, Sun } from 'lucide-react';
@@ -132,7 +132,6 @@ const Profile = () => {
 
     setUploading(true);
     try {
-      const storage = getStorage();
       const fileExtension = file.name.split('.').pop();
       const fileName = `${user.uid}_${Date.now()}.${fileExtension}`;
       const storageRef = ref(storage, `avatars/${fileName}`);

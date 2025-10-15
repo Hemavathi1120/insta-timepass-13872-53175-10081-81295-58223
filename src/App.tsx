@@ -11,6 +11,8 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Create from "./pages/Create";
 import Notifications from "./pages/Notifications";
+import Messages from "./pages/Messages";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +64,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    <Messages />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat/:conversationId"
+                element={
+                  <ProtectedRoute>
+                    <Chat />
                   </ProtectedRoute>
                 }
               />

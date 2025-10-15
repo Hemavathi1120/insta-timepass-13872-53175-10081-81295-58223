@@ -4,7 +4,7 @@ import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { Grid, Edit, Upload, UserPlus, UserMinus, Settings, LogOut, Moon, Sun } from 'lucide-react';
+import { Grid, Edit, Upload, UserPlus, UserMinus, Settings, LogOut, Moon, Sun, MessageCircle } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -259,6 +259,51 @@ const Profile = () => {
     }
   };
 
+  const handleStartConversation = async () => {
+    if (!user || !profileUserId || isOwnProfile) return;
+
+    try {
+      // Check if conversation already exists
+      const conversationsRef = collection(db, 'conversations');
+      const q = query(
+        conversationsRef,
+        where('participants', 'array-contains', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      
+      let conversationId = null;
+      
+      // Find existing conversation with this user
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        if (data.participants.includes(profileUserId)) {
+          conversationId = doc.id;
+          break;
+        }
+      }
+      
+      // Create new conversation if it doesn't exist
+      if (!conversationId) {
+        const newConversation = await addDoc(collection(db, 'conversations'), {
+          participants: [user.uid, profileUserId],
+          lastMessage: '',
+          lastMessageTime: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        });
+        conversationId = newConversation.id;
+      }
+      
+      // Navigate to chat
+      navigate(`/chat/${conversationId}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
@@ -452,27 +497,40 @@ const Profile = () => {
                   </DialogContent>
                 </Dialog>
                 ) : (
-                  <Button 
-                    variant={isFollowing ? "outline" : "default"}
-                    size="sm" 
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                    className={isFollowing ? "hover:bg-secondary" : "bg-gradient-instagram hover:opacity-90 text-white"}
-                  >
-                    {followLoading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
-                    ) : isFollowing ? (
-                      <>
-                        <UserMinus className="w-4 h-4 mr-2" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Follow
-                      </>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant={isFollowing ? "outline" : "default"}
+                      size="sm" 
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      className={isFollowing ? "hover:bg-secondary flex-1" : "bg-gradient-instagram hover:opacity-90 text-white flex-1"}
+                    >
+                      {followLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
+                      ) : isFollowing ? (
+                        <>
+                          <UserMinus className="w-4 h-4 mr-2" />
+                          Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Follow
+                        </>
+                      )}
+                    </Button>
+                    {isFollowing && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleStartConversation}
+                        className="hover:bg-secondary"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Message
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 )}
               </div>
               <div className="flex space-x-12 mb-6">

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Camera, Home, PlusSquare, User, Bell, Search } from 'lucide-react';
+import { Camera, Home, PlusSquare, User, Bell, Search, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -12,7 +12,8 @@ export const Navbar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   
   const showBackButton = location.pathname !== '/' && user;
@@ -20,17 +21,32 @@ export const Navbar = () => {
   useEffect(() => {
     if (!user) return;
 
+    // Listen to unread notifications
     const notificationsQuery = query(
       collection(db, 'notifications'),
       where('toUserId', '==', user.uid),
       where('read', '==', false)
     );
 
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      setUnreadCount(snapshot.size);
+    const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+      setUnreadNotifications(snapshot.size);
     });
 
-    return () => unsubscribe();
+    // Listen to unread messages
+    const messagesQuery = query(
+      collection(db, 'messages'),
+      where('receiverId', '==', user.uid),
+      where('read', '==', false)
+    );
+
+    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+      setUnreadMessages(snapshot.size);
+    });
+
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeMessages();
+    };
   }, [user]);
 
   return (
@@ -90,6 +106,16 @@ export const Navbar = () => {
                   <Home className="w-6 h-6" />
                 </Button>
               </Link>
+              <Link to="/messages">
+                <Button variant="ghost" size="icon" className="hover:bg-secondary relative">
+                  <MessageCircle className="w-6 h-6" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Link to="/create">
                 <Button variant="ghost" size="icon" className="hover:bg-secondary">
                   <PlusSquare className="w-6 h-6" />
@@ -98,9 +124,9 @@ export const Navbar = () => {
               <Link to="/notifications">
                 <Button variant="ghost" size="icon" className="hover:bg-secondary relative">
                   <Bell className="w-6 h-6" />
-                  {unreadCount > 0 && (
+                  {unreadNotifications > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
                     </span>
                   )}
                 </Button>
